@@ -6,26 +6,8 @@ on:
       - 'v*'  # Trigger on version tags (v1.0.0, etc.)
 
 jobs:
-  create_release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
   build_and_upload:
     name: Build and Upload
-    needs: create_release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -52,18 +34,3 @@ jobs:
         with:
           command: build
           args: --release
-      
-      - name: Prepare asset
-        shell: bash
-        run: |
-          cp target/release/${{ matrix.artifact_name }} ./${{ matrix.asset_name }}
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./${{ matrix.asset_name }}
-          asset_name: ${{ matrix.asset_name }}
-          asset_content_type: application/octet-stream
