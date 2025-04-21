@@ -1,5 +1,4 @@
 /target
 config.toml
-Cargo.lock
 
 .DS_Store
