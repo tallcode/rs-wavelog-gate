@@ -16,7 +16,7 @@ jobs:
             artifact_name: rs-wavelog-gate-macos
             asset_name: rs-wavelog-gate
           - os: windows-latest
-            artifact_name: rs-wavelog-gate-windows.exe
+            artifact_name: rs-wavelog-gate-windows
             asset_name: rs-wavelog-gate.exe
 
     steps:
@@ -42,18 +42,9 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
 
-      - name: Display structure of downloaded files
-        run: ls -R
-
-      - name: Create release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          files: |
-            rs-wavelog-gate-macos
-            rs-wavelog-gate-windows.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish built binary to GitHub releases
+        run: |
+          gh release create --generate-notes ./rs-wavelog-gate-macos/rs-wavelog-gate ./rs-wavelog-gate-windows/rs-wavelog-gate.exe
 
 
       
