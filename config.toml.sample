@@ -1,7 +1,7 @@
 [wavelog]
 url = "http://bg5tox.asia:5973"
-key = "wl85d18aeeedca7"
-station = 3
+key = "xxxxxxx"
+station = 1
 
 [server]
 host = "0.0.0.0"
