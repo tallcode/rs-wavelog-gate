@@ -6,17 +6,17 @@ on:
       - 'v*'  # Trigger on version tags (v1.0.0, etc.)
 
 jobs:
-  build_and_upload:
+  build:
     name: Build and Upload
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: macos-latest
-            artifact_name: wavelog-gate
+            artifact_name: macos-binary
             asset_name: wavelog-gate-macos
           - os: windows-latest
-            artifact_name: wavelog-gate.exe
+            artifact_name: windows-binary
             asset_name: wavelog-gate-windows.exe
 
     steps:
@@ -34,3 +34,21 @@ jobs:
         with:
           command: build
           args: --release
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/windows-binary/wavelog-gate-windows.exe
+            artifacts/macos-binary/wavelog-gate-macos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
