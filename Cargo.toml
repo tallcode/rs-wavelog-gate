@@ -1,0 +1,12 @@
+[package]
+name = "rs-wavelog-gate"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+config = "0.15.8"
+serde = { version = "1.0.128", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+regex = "1.9"
+reqwest = { version = "0.11", features = ["json"] }

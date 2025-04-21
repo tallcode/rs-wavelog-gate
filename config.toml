@@ -1,0 +1,8 @@
+[wavelog]
+url = "http://bg5tox.asia:5973"
+key = "wl85d18aeeedca7"
+station = 3
+
+[server]
+host = "0.0.0.0"
+port = 2333
