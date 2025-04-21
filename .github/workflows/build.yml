@@ -13,21 +13,14 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            artifact_name: macos-binary
-            asset_name: wavelog-gate-macos
+            artifact_name: rs-wavelog-gate-macos
+            asset_name: rs-wavelog-gate
           - os: windows-latest
-            artifact_name: windows-binary
-            asset_name: wavelog-gate-windows.exe
+            artifact_name: rs-wavelog-gate-windows.exe
+            asset_name: rs-wavelog-gate.exe
 
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - uses: actions/checkout@v4
       
       - name: Build
         uses: actions-rs/cargo@v1
@@ -35,21 +28,32 @@ jobs:
           command: build
           args: --release
 
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+            name: ${{ matrix.artifact_name }}
+            path: target/release/${{ matrix.asset_name }}
+
   release:
     name: Release
-    needs: build
     runs-on: ubuntu-latest
+    needs: build
     steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
+      - name: Download artifact
+        uses: actions/download-artifact@v3
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
+      - name: Display structure of downloaded files
+        run: ls -R
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.ref }}
           files: |
-            artifacts/windows-binary/wavelog-gate-windows.exe
-            artifacts/macos-binary/wavelog-gate-macos
+            rs-wavelog-gate-macos
+            rs-wavelog-gate-windows.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+      
