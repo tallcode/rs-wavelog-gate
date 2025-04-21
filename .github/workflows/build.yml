@@ -45,6 +45,8 @@ jobs:
       - name: Publish built binary to GitHub releases
         run: |
           gh release create --generate-notes ./rs-wavelog-gate-macos/rs-wavelog-gate ./rs-wavelog-gate-windows/rs-wavelog-gate.exe
+        env:
+          GH_TOKEN: ${{ github.token }}
 
 
       
