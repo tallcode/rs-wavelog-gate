@@ -1,7 +1,5 @@
 #[cfg(windows)]
 fn main() {
-    use std::io::Write;
-    
     let mut res = winres::WindowsResource::new();
     
     // 设置应用程序信息

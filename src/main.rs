@@ -172,8 +172,8 @@ impl RustWavelogGateApp {
                 .collect::<Vec<_>>(),
         )
         .padding(iced::Padding {
-            top: 0.0,
-            bottom: 0.0,
+            top: 10.0,
+            bottom: 10.0,
             left: 10.0,
             right: 10.0,
         })
@@ -184,6 +184,12 @@ impl RustWavelogGateApp {
         Container::new(scrollable)
             .width(Length::Fill)
             .height(Length::Fill)
+            .style(|_| {
+                iced::widget::container::Style {
+                    background: Some(iced::Background::Color(Color::BLACK)),
+                    ..Default::default()
+                }
+            })
             .into()
     }
 }
@@ -199,6 +205,7 @@ impl Default for RustWavelogGateApp {
 
 fn main() -> iced::Result {
     iced::application("Rust Wavelog Gate", RustWavelogGateApp::update, RustWavelogGateApp::view)
+        .theme(|_state| iced::Theme::Dark)
         .window(iced::window::Settings {
             size: iced::Size {
                 width: 600.0,
