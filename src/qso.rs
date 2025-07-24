@@ -1,7 +1,7 @@
 use regex::Regex;
 use std::collections::HashMap;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct QSO {
     pub call: String,
     pub gridsquare: String,
@@ -24,28 +24,28 @@ pub struct QSO {
 }
 
 impl QSO {
-    pub fn new() -> Self {
-        QSO {
-            call: String::new(),
-            gridsquare: String::new(),
-            mode: String::new(),
-            submode: String::new(),
-            rst_sent: String::new(),
-            rst_rcvd: String::new(),
-            qso_date: String::new(),
-            time_on: String::new(),
-            qso_date_off: String::new(),
-            time_off: String::new(),
-            band: String::new(),
-            freq: String::new(),
-            freq_rx: String::new(),
-            operator: String::new(),
-            comment: String::new(),
-            power: String::new(),
-            my_gridsquare: String::new(),
-            station_callsign: String::new(),
-        }
-    }
+    // pub fn new() -> Self {
+    //     QSO {
+    //         call: String::new(),
+    //         gridsquare: String::new(),
+    //         mode: String::new(),
+    //         submode: String::new(),
+    //         rst_sent: String::new(),
+    //         rst_rcvd: String::new(),
+    //         qso_date: String::new(),
+    //         time_on: String::new(),
+    //         qso_date_off: String::new(),
+    //         time_off: String::new(),
+    //         band: String::new(),
+    //         freq: String::new(),
+    //         freq_rx: String::new(),
+    //         operator: String::new(),
+    //         comment: String::new(),
+    //         power: String::new(),
+    //         my_gridsquare: String::new(),
+    //         station_callsign: String::new(),
+    //     }
+    // }
 
     pub fn from_map(map: &HashMap<String, String>) -> Self {
         QSO {

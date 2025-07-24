@@ -1,110 +1,208 @@
 mod qso;
 mod settings;
+mod wavelog;
+mod udp;
 
 use qso::QSO;
 use settings::Settings;
+use wavelog::send;
+use udp::UdpListener;
 
-use serde::Serialize;
-use tokio::net::UdpSocket;
-use reqwest::{Client, header};
-use std::time::Duration;
-use std::error::Error;
+use iced::widget::{Column, Container, Text, Scrollable};
+use iced::{Color, Element, Length, Task};
 
+const MAX_LOG_LINES: usize = 50;
 
-#[derive(Serialize)]
-
-struct WavelogPayload {
-    key: String,
-    station_profile_id: String,
-    #[serde(rename = "type")]
-    type_field: String,
-    string: String,
-
+#[derive(Debug)]
+struct RustWavelogGateApp {
+    lines: Vec<String>,
+    settings: Option<Settings>,
 }
 
-pub async fn send_to_wavelog(qso: &QSO,  settings: &Settings) -> Result<String, Box<dyn Error>> {
-    // Create a client with the appropriate settings
-    let client = Client::builder()
-        .timeout(Duration::from_secs(5))
-        .danger_accept_invalid_certs(true)
-        .build()?;
-    // Prepare the payload
-    let payload = WavelogPayload {
-        key: settings.wavelog.key.trim().to_string(),
-        station_profile_id: settings.wavelog.station.trim().to_string(),
-        type_field: "adif".to_string(),
-        string: qso.to_adif(),
-    };
-    // Convert payload to JSON
-    let post_data = serde_json::to_string(&payload)?;
-    // Prepare the URL
-    let url = format!("{}/api/qso", settings.wavelog.url);
-    // Get the version from Cargo.toml or provide a default
-    let version = option_env!("CARGO_PKG_VERSION").unwrap_or("1.0");
+#[derive(Debug, Clone)]
+enum Message {
+    SettingsLoaded(Result<Settings, String>),
+    QSOReceived(QSO, String),
+    UdpMessage(Vec<u8>),
+}
 
-    
-    // Send the request
-    let response = client
-        .post(&url)
-        .header(header::CONTENT_TYPE, "application/json")
-        .header(header::USER_AGENT, format!("RustClient_v{}", version))
-        .body(post_data)
-        .send()
-        .await?;
-
-    
-    // Get the status code
-    let status_code = response.status();
-    // Get the response body
-    let res_string = response.text().await?;
-    // Check if request was successful
-    if !status_code.is_success() {
-        if res_string.contains("html>") {
-            return Err("Wrong URL".into());
-        }
-        return Err(res_string.into());
+impl RustWavelogGateApp {
+    pub fn new() -> (Self, Task<Message>) {
+        let app = Self {
+            lines: vec!["Loading...".to_string()],
+            settings: None,
+        };
+        
+        let task = Task::perform(Self::load_settings(), Message::SettingsLoaded);
+        (app, task)
     }
-    Ok(res_string)
-}
 
+    async fn load_settings() -> Result<Settings, String> {
+        Settings::load().map_err(|e| format!("Configuration loading failed: {}", e))
+    }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let settings = Settings::load()?;
-    
-    let addr = format!("{}:{}", settings.server.host, settings.server.port);
-    let sock = UdpSocket::bind(&addr).await?;
-    println!("Listening on {}", addr);
+    async fn start_udp_listener(host: String, port: u16) -> Vec<u8> {
+        let listener = UdpListener::new(host, port);
+        listener.listen_once().await.unwrap_or_default()
+    }
 
-    tokio::spawn(async move {
-        let mut buf = [0; 1024];
-        loop {
-            if let Ok((len, _src)) = sock.recv_from(&mut buf).await {
-                let msg = &buf[..len];
-                if let Ok(adif) = std::str::from_utf8(msg) {
-                    let qsos = QSO::from_adif(adif);
-                    for qso in qsos {
-                        // 发送到 Wavelog
-                        if !qso.call.is_empty() && !qso.qso_date.is_empty() && !qso.time_on.is_empty() && !qso.band.is_empty() {
-                            let status = match send_to_wavelog(&qso, &settings).await {
-                                Ok(_res) => "OK".to_string(),
-                                Err(_e) => "ERROR".to_string()
-                            };
-                            // print log like 080415 RQ6Z (KN98) on 10m (R:-24 / S:-15) - OK
-                            if !qso.gridsquare.is_empty() {
-                                println!("{} {} ({}) on {} (R:{} / S:{}) - {}", qso.time_on, qso.call, qso.gridsquare, qso.band, qso.rst_sent, qso.rst_rcvd, status);
-                            } else {
-                                println!("{} {} on {} (R:{} / S:{}) - {}", qso.time_on, qso.call, qso.band, qso.rst_sent, qso.rst_rcvd, status);
-                            }
-                        }
-                    }
-                }
+    fn add_log_line(&mut self, line: String) {
+        self.lines.push(line);
+        if self.lines.len() > MAX_LOG_LINES {
+            self.lines.remove(0);
+        }
+    }
+
+    fn format_qso_log(&self, qso: &QSO, status: &str) -> String {
+        if !qso.gridsquare.is_empty() {
+            format!(
+                "{} {} ({}) on {} (R:{} / S:{}) - {}", 
+                qso.time_on, qso.call, qso.gridsquare, qso.band, qso.rst_sent, qso.rst_rcvd, status
+            )
+        } else {
+            format!(
+                "{} {} on {} (R:{} / S:{}) - {}", 
+                qso.time_on, qso.call, qso.band, qso.rst_sent, qso.rst_rcvd, status
+            )
+        }
+    }
+
+    fn process_qso_data(&self, data: &[u8], settings: &Settings) -> Task<Message> {
+        let adif = match std::str::from_utf8(data) {
+            Ok(adif) => adif,
+            Err(_) => return self.restart_udp_listener(settings),
+        };
+
+        let qsos = QSO::from_adif(adif);
+        let mut tasks = Vec::new();
+
+        // 处理每个 QSO
+        for qso in qsos {
+            if self.is_valid_qso(&qso) {
+                tasks.push(self.send_qso_task(qso, settings.clone()));
             }
         }
-    });
 
-    // 保持主线程运行
-    loop {
-        tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+        // 重启 UDP 监听
+        tasks.push(self.restart_udp_listener(settings));
+        Task::batch(tasks)
     }
+
+    fn is_valid_qso(&self, qso: &QSO) -> bool {
+        !qso.call.is_empty() && !qso.qso_date.is_empty() 
+            && !qso.time_on.is_empty() && !qso.band.is_empty()
+    }
+
+    fn send_qso_task(&self, qso: QSO, settings: Settings) -> Task<Message> {
+        Task::perform(
+            async move {
+                let status = match send(&qso, &settings).await {
+                    Ok(_) => "OK".to_string(),
+                    Err(e) => format!("ERROR {}", e),
+                };
+                (qso, status)
+            },
+            |(qso, status)| Message::QSOReceived(qso, status),
+        )
+    }
+
+    fn restart_udp_listener(&self, settings: &Settings) -> Task<Message> {
+        Task::perform(
+            Self::start_udp_listener(settings.server.host.clone(), settings.server.port),
+            Message::UdpMessage,
+        )
+    }
+
+    pub fn update(&mut self, message: Message) -> Task<Message> {
+        match message {
+            Message::SettingsLoaded(result) => self.handle_settings_loaded(result),
+            Message::UdpMessage(data) => self.handle_udp_message(data),
+            Message::QSOReceived(qso, status) => self.handle_qso_received(qso, status),
+        }
+    }
+
+    fn handle_settings_loaded(&mut self, result: Result<Settings, String>) -> Task<Message> {
+        match result {
+            Ok(settings) => {
+                self.lines.clear();
+                self.lines.push(format!("Listen: {}:{}", settings.server.host, settings.server.port));
+                self.lines.push(format!("Wavelog Server: {}", settings.wavelog.url));
+                
+                let task = self.restart_udp_listener(&settings);
+                self.settings = Some(settings);
+                task
+            }
+            Err(e) => {
+                self.lines.clear();
+                self.lines.push(format!("Error: {}", e));
+                Task::none()
+            }
+        }
+    }
+
+    fn handle_udp_message(&mut self, data: Vec<u8>) -> Task<Message> {
+        match &self.settings {
+            Some(settings) => self.process_qso_data(&data, settings),
+            None => Task::none(),
+        }
+    }
+
+    fn handle_qso_received(&mut self, qso: QSO, status: String) -> Task<Message> {
+        if !qso.call.is_empty() {
+            let log_line = self.format_qso_log(&qso, &status);
+            self.add_log_line(log_line);
+        }
+        Task::none()
+    }
+
+    pub fn view(&self) -> Element<Message> {
+        let content = Column::with_children(
+            self.lines
+                .iter()
+                .map(|line| {
+                    Text::new(line)
+                        .size(14)
+                        .line_height(1.5)
+                        .color(Color::WHITE)
+                        .font(iced::Font::MONOSPACE)
+                        .into()
+                })
+                .collect::<Vec<_>>(),
+        )
+        .padding(iced::Padding {
+            top: 0.0,
+            bottom: 0.0,
+            left: 10.0,
+            right: 10.0,
+        })
+        .width(Length::Fill);
+
+        let scrollable = Scrollable::new(content).anchor_bottom();
+
+        Container::new(scrollable)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
+    }
+}
+
+impl Default for RustWavelogGateApp {
+    fn default() -> Self {
+        Self {
+            lines: vec!["Starting...".to_string()],
+            settings: None,
+        }
+    }
+}
+
+fn main() -> iced::Result {
+    iced::application("Rust Wavelog Gate", RustWavelogGateApp::update, RustWavelogGateApp::view)
+        .window(iced::window::Settings {
+            size: iced::Size {
+                width: 600.0,
+                height: 200.0,
+            },
+            ..Default::default()
+        })
+        .run_with(RustWavelogGateApp::new)
 }

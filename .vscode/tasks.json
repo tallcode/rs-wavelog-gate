@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build and Run Wavelog Gate",
+			"type": "shell",
+			"command": "cargo",
+			"args": [
+				"run",
+				"--release"
+			],
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": [
+				"$rustc"
+			]
+		}
+	]
+}

@@ -1,20 +1,20 @@
 use serde::Deserialize;
 use config::Config;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Settings {
     pub wavelog: WaveLogSettings,
     pub server: ServerSettings,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct WaveLogSettings {
     pub url: String,
     pub key: String,
     pub station: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ServerSettings {
     #[serde(default = "default_host")]
     pub host: String,
