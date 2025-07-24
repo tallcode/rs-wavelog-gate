@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod qso;
 mod settings;
 mod wavelog;
@@ -202,6 +204,12 @@ fn main() -> iced::Result {
                 width: 600.0,
                 height: 200.0,
             },
+            min_size: Some(iced::Size {
+                width: 400.0,
+                height: 150.0,
+            }),
+            resizable: true,
+            decorations: true,
             ..Default::default()
         })
         .run_with(RustWavelogGateApp::new)

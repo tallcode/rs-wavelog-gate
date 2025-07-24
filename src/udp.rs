@@ -22,18 +22,20 @@ impl UdpListener {
         let sock = UdpSocket::bind(&addr).await
             .map_err(|e| UdpListenerError::BindError(addr.clone(), e))?;
 
-        let mut buf = [0; 1024];
+        let mut buf = [0; 4096]; // 增大缓冲区大小以处理更大的ADIF数据
         
         loop {
             match sock.recv_from(&mut buf).await {
                 Ok((len, _src)) => {
-                    return Ok(buf[..len].to_vec());
+                    if len > 0 {
+                        return Ok(buf[..len].to_vec());
+                    }
                 }
                 Err(e) => {
                     // 记录错误但继续监听
                     eprintln!("UDP receive error: {}", e);
                     // 添加小延迟避免过度占用CPU
-                    tokio::time::sleep(Duration::from_millis(10)).await;
+                    tokio::time::sleep(Duration::from_millis(100)).await;
                 }
             }
         }
