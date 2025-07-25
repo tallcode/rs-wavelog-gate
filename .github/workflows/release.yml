@@ -41,6 +41,7 @@ jobs:
       
       - name: Install cargo-bundle (macOS)
         if: matrix.os == 'macos-latest'
+        shell: bash
         run: |
           if ! cargo-bundle --version >/dev/null 2>&1; then
             echo "Installing cargo-bundle..."
@@ -50,6 +51,7 @@ jobs:
           fi
 
       - name: Install cargo-edit
+        shell: bash
         run: |
           if ! cargo set-version --version >/dev/null 2>&1; then
             echo "Installing cargo-edit..."
