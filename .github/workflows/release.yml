@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
             name: ${{ matrix.artifact_name }}
-            path: target/release/${{ matrix.bundle_name }}
+            path: target/release/bundle/osx/${{ matrix.bundle_name }}
 
       - name: Upload Windows executable
         if: matrix.os == 'windows-latest'
@@ -76,16 +76,12 @@ jobs:
       
       - name: Prepare macOS app bundle
         run: |
-          cd rs-wavelog-gate-macos
-          zip -r ../rs-wavelog-gate-macos.zip "WavelogGate.app"
-          cd ..
+          zip rs-wavelog-gate-macos.zip rs-wavelog-gate-macos/WavelogGate.app
       
       - name: Prepare Windows executable
         run: |
-          cd rs-wavelog-gate-windows
-          chmod +x rs-wavelog-gate.exe
-          zip ../rs-wavelog-gate-windows.zip rs-wavelog-gate.exe
-          cd ..
+          chmod +x rs-wavelog-gate-windows/rs-wavelog-gate.exe
+          zip rs-wavelog-gate-windows.zip rs-wavelog-gate-windows/rs-wavelog-gate.exe
       
       - name: Publish built binaries to GitHub releases
         run: |
