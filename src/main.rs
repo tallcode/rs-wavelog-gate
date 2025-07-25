@@ -337,6 +337,19 @@ impl Default for RustWavelogGateApp {
 }
 
 fn main() -> iced::Result {
+    // Load the icon
+    let icon = {
+        let icon_data = include_bytes!("../icon.png");
+        match image::load_from_memory(icon_data) {
+            Ok(img) => {
+                let rgba = img.to_rgba8();
+                let (width, height) = rgba.dimensions();
+                iced::window::icon::from_rgba(rgba.into_raw(), width, height).ok()
+            }
+            Err(_) => None,
+        }
+    };
+
     iced::application("Wavelog Gate", RustWavelogGateApp::update, RustWavelogGateApp::view)
         .theme(|_state| iced::Theme::Dark)
         .window(iced::window::Settings {
@@ -350,6 +363,7 @@ fn main() -> iced::Result {
             }),
             resizable: true,
             decorations: true,
+            icon,
             ..Default::default()
         })
         .run_with(RustWavelogGateApp::new)
