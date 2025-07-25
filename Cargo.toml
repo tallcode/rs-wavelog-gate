@@ -1,6 +1,6 @@
 [package]
 name = "rs-wavelog-gate"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2024"
 
 [[bin]]
@@ -10,7 +10,6 @@ path = "src/main.rs"
 [package.metadata.bundle]
 name = "WavelogGate"
 identifier = "com.bg5atv.wavelog-gate"
-version = "0.1.0"
 icon = ["icon.icns", "icon.png"]
 category = "Utility"
 short_description = "Wavelog Gate Application"

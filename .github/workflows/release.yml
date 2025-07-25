@@ -44,10 +44,27 @@ jobs:
         run: |
           if ! command -v cargo-bundle &> /dev/null; then
             echo "Installing cargo-bundle..."
-            cargo install cargo-bundle
+            cargo install cargo-bundle --force
           else
             echo "cargo-bundle already installed, skipping installation"
           fi
+
+      - name: Install cargo-edit
+        run: |
+          if ! command -v cargo-set-version &> /dev/null; then
+            echo "Installing cargo-edit..."
+            cargo install cargo-edit --force
+          else
+            echo "cargo-edit already installed, skipping installation"
+          fi    
+
+      - name: Update version from tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Updating version to: $VERSION"
+          cargo set-version $VERSION
+        shell: bash
+        
 
       - name: Build release binary
         run: |

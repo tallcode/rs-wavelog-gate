@@ -386,7 +386,11 @@ fn main() -> iced::Result {
     };
 
     // Configure and start the Iced application
-    iced::application("Wavelog Gate", RustWavelogGateApp::update, RustWavelogGateApp::view)
+    iced::application(
+        |_state: &RustWavelogGateApp| format!("Wavelog Gate v{}", env!("CARGO_PKG_VERSION")),
+        RustWavelogGateApp::update,
+        RustWavelogGateApp::view
+    )
         .theme(|_state| iced::Theme::Dark)
         .window(iced::window::Settings {
             size: iced::Size {
