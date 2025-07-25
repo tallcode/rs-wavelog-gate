@@ -1,0 +1,41 @@
+name: Cache
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  cache:
+    name: Cache
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+          - os: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-
+      
+      - name: Install cargo-bundle (macOS)
+        if: ${{ steps.cache.outputs.cache-hit != 'true' && matrix.os == 'macos-latest'}}
+        run: cargo install cargo-bundle
+
+      - name: Build
+        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        run: cargo build --profile release

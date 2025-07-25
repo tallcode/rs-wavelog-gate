@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Cache Cargo dependencies
+      - name: Cache
         uses: actions/cache@v4
         with:
           path: |
