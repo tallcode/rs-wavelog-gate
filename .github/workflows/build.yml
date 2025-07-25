@@ -32,6 +32,16 @@ jobs:
             ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
             ${{ runner.os }}-cargo-
 
+      - name: Install cargo-bundle (macOS)
+        if: matrix.os == 'macos-latest' && steps.cache.outputs.cache-hit != 'true'
+        run: |
+          if ! command -v cargo-bundle &> /dev/null; then
+            echo "Installing cargo-bundle..."
+            cargo install cargo-bundle
+          else
+            echo "cargo-bundle already installed, skipping installation"
+          fi
+
       - name: Build
-        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        if: steps.cache.outputs.cache-hit != 'true'
         run: cargo build --profile release

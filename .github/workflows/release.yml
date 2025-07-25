@@ -41,7 +41,13 @@ jobs:
       
       - name: Install cargo-bundle (macOS)
         if: matrix.os == 'macos-latest'
-        run: cargo install cargo-bundle
+        run: |
+          if ! command -v cargo-bundle &> /dev/null; then
+            echo "Installing cargo-bundle..."
+            cargo install cargo-bundle
+          else
+            echo "cargo-bundle already installed, skipping installation"
+          fi
 
       - name: Build release binary
         run: |
