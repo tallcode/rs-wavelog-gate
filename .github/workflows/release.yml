@@ -18,6 +18,7 @@ jobs:
           - os: macos-latest
             artifact_name: rs-wavelog-gate-macos
             asset_name: rs-wavelog-gate
+            bundle_name: "Wavelog Gate.app"
           - os: windows-latest
             artifact_name: rs-wavelog-gate-windows
             asset_name: rs-wavelog-gate.exe
@@ -34,10 +35,27 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build
+      
+      - name: Install cargo-bundle (macOS)
+        if: matrix.os == 'macos-latest'
+        run: cargo install cargo-bundle
+
+      - name: Build release binary
         run: cargo build --profile release
 
-      - name: Upload
+      - name: Create macOS app bundle with icon
+        if: matrix.os == 'macos-latest'
+        run: cargo bundle --release
+
+      - name: Upload macOS app bundle
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+            name: ${{ matrix.artifact_name }}
+            path: target/release/bundle/osx/${{ matrix.bundle_name }}
+
+      - name: Upload Windows executable
+        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
             name: ${{ matrix.artifact_name }}
@@ -49,21 +67,27 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v4
-      - name: Download artifact
+      - name: Download artifacts
         uses: actions/download-artifact@v4
-      - run: |
-          chmod +x ./rs-wavelog-gate-macos/rs-wavelog-gate
-          chmod +x ./rs-wavelog-gate-windows/rs-wavelog-gate.exe
-          tar -czf rs-wavelog-gate-macos.tar.gz rs-wavelog-gate-macos/rs-wavelog-gate
-          tar -czf rs-wavelog-gate-windows.tar.gz rs-wavelog-gate-windows/rs-wavelog-gate.exe
-      - name: Publish built binary to GitHub releases
+      
+      - name: Prepare macOS app bundle
+        run: |
+          cd rs-wavelog-gate-macos
+          zip -r ../rs-wavelog-gate-macos.zip "Wavelog Gate.app"
+          cd ..
+      
+      - name: Prepare Windows executable
+        run: |
+          cd rs-wavelog-gate-windows
+          chmod +x rs-wavelog-gate.exe
+          zip ../rs-wavelog-gate-windows.zip rs-wavelog-gate.exe
+          cd ..
+      
+      - name: Publish built binaries to GitHub releases
         run: |
           gh release create ${{ github.ref_name }} \
             --generate-notes \
-            rs-wavelog-gate-macos.tar.gz#macOS \
-            rs-wavelog-gate-windows.tar.gz#Windows 
+            rs-wavelog-gate-macos.zip#"macOS App Bundle" \
+            rs-wavelog-gate-windows.zip#"Windows Executable"
         env:
           GH_TOKEN: ${{ github.token }}
-
-
-      

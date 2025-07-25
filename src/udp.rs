@@ -1,7 +1,7 @@
 use tokio::net::UdpSocket;
 use std::time::Duration;
 
-/// UDP监听器，用于接收来自Ham Radio软件的ADIF数据
+/// UDP listener for receiving ADIF data from Ham Radio software
 #[derive(Debug)]
 pub struct UdpListener {
     host: String,
@@ -9,20 +9,20 @@ pub struct UdpListener {
 }
 
 impl UdpListener {
-    /// 创建新的UDP监听器实例
+    /// Create a new UDP listener instance
     pub fn new(host: String, port: u16) -> Self {
         Self { host, port }
     }
 
-    /// 启动UDP服务器并监听数据
-    /// 返回接收到的第一个数据包的内容
+    /// Start UDP server and listen for data
+    /// Returns the content of the first received data packet
     pub async fn listen_once(&self) -> Result<Vec<u8>, UdpListenerError> {
         let addr = format!("{}:{}", self.host, self.port);
         
         let sock = UdpSocket::bind(&addr).await
             .map_err(|e| UdpListenerError::BindError(addr.clone(), e))?;
 
-        let mut buf = [0; 4096]; // 增大缓冲区大小以处理更大的ADIF数据
+        let mut buf = [0; 4096]; // Increase buffer size to handle larger ADIF data
         
         loop {
             match sock.recv_from(&mut buf).await {
@@ -32,9 +32,9 @@ impl UdpListener {
                     }
                 }
                 Err(e) => {
-                    // 记录错误但继续监听
+                    // Log error but continue listening
                     eprintln!("UDP receive error: {}", e);
-                    // 添加小延迟避免过度占用CPU
+                    // Add small delay to avoid excessive CPU usage
                     tokio::time::sleep(Duration::from_millis(100)).await;
                 }
             }
@@ -42,7 +42,7 @@ impl UdpListener {
     }
 }
 
-/// UDP监听器错误类型
+/// UDP listener error types
 #[derive(Debug)]
 pub enum UdpListenerError {
     BindError(String, std::io::Error),

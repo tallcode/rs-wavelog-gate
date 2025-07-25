@@ -2,21 +2,24 @@
 fn main() {
     let mut res = winres::WindowsResource::new();
     
-    // 设置应用程序信息
+    // Set application information
     res.set_version_info(winres::VersionInfo::PRODUCTVERSION, 0x00010000);
     res.set_version_info(winres::VersionInfo::FILEVERSION, 0x00010000);
     
-    // 设置图标（如果有的话）
-    // res.set_icon("icon.ico");
+    // Set icon
+    res.set_icon("icon.ico");
     
-    // 编译资源
+    // Compile resources
     if let Err(e) = res.compile() {
         eprintln!("Warning: Failed to compile Windows resources: {}", e);
-        // 不要让构建失败，只是警告
+        // Don't fail the build, just warn
     }
 }
 
 #[cfg(not(windows))]
 fn main() {
-    // 在非Windows平台上什么都不做
+    // For Mac platform, icon is handled through bundle configuration
+    // Other build-time tasks can be executed here
+    println!("cargo:rerun-if-changed=icon.icns");
+    println!("cargo:rerun-if-changed=icon.png");
 }

@@ -7,6 +7,15 @@ edition = "2024"
 name = "rs-wavelog-gate"
 path = "src/main.rs"
 
+[package.metadata.bundle]
+name = "Wavelog Gate"
+identifier = "com.bg5atv.wavelog-gate"
+version = "0.1.0"
+icon = ["icon.icns", "icon.png"]
+category = "Utility"
+short_description = "Wavelog Gate Application"
+long_description = "A utility application for Wavelog Gate functionality"
+
 [build-dependencies]
 winres = "0.1"
 
