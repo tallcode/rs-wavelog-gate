@@ -39,42 +39,13 @@ jobs:
             ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
             ${{ runner.os }}-cargo-
       
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-      
-      - name: Install sccache
-        uses: mozilla-actions/sccache-action@v0.0.5
-        continue-on-error: true
-        
-      - name: Configure sccache
-        run: |
-          if command -v sccache &> /dev/null; then
-            echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-            echo "sccache is available, enabling it"
-          else
-            echo "sccache is not available, skipping"
-          fi
-      
       - name: Install cargo-bundle (macOS)
         if: matrix.os == 'macos-latest'
         run: cargo install cargo-bundle
 
       - name: Build release binary
         run: |
-          export CARGO_INCREMENTAL=1
-          if cargo build --profile release 2>/dev/null || cargo build --release; then
-            echo "Build successful"
-          else
-            echo "Build failed, trying without sccache"
-            unset RUSTC_WRAPPER
-            unset SCCACHE_GHA_ENABLED
-            cargo build --release
-          fi
-        env:
-          CARGO_NET_GIT_FETCH_WITH_CLI: true
+          cargo build --profile release
 
       - name: Create macOS app bundle with icon
         if: matrix.os == 'macos-latest'
