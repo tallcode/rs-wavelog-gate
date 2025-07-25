@@ -8,7 +8,7 @@ name = "rs-wavelog-gate"
 path = "src/main.rs"
 
 [package.metadata.bundle]
-name = "Wavelog Gate"
+name = "WavelogGate"
 identifier = "com.bg5atv.wavelog-gate"
 version = "0.1.0"
 icon = ["icon.icns", "icon.png"]
