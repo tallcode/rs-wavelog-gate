@@ -18,14 +18,14 @@ jobs:
           - os: macos-latest
             artifact_name: rs-wavelog-gate-macos
             asset_name: rs-wavelog-gate
-            bundle_name: "Wavelog Gate.app"
+            bundle_name: "WavelogGate.app"
           - os: windows-latest
             artifact_name: rs-wavelog-gate-windows
             asset_name: rs-wavelog-gate.exe
 
     steps:
       - uses: actions/checkout@v4
-      - name: Cache
+      - name: Cache Cargo dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -34,14 +34,34 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.5
+        
+      - name: Configure sccache
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
       
       - name: Install cargo-bundle (macOS)
         if: matrix.os == 'macos-latest'
         run: cargo install cargo-bundle
 
       - name: Build release binary
-        run: cargo build --profile release
+        run: |
+          export CARGO_INCREMENTAL=1
+          cargo build --profile release
+        env:
+          CARGO_NET_GIT_FETCH_WITH_CLI: true
 
       - name: Create macOS app bundle with icon
         if: matrix.os == 'macos-latest'
@@ -52,7 +72,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
             name: ${{ matrix.artifact_name }}
-            path: target/release/bundle/osx/${{ matrix.bundle_name }}
+            path: target/release/${{ matrix.bundle_name }}
 
       - name: Upload Windows executable
         if: matrix.os == 'windows-latest'
@@ -73,7 +93,7 @@ jobs:
       - name: Prepare macOS app bundle
         run: |
           cd rs-wavelog-gate-macos
-          zip -r ../rs-wavelog-gate-macos.zip "Wavelog Gate.app"
+          zip -r ../rs-wavelog-gate-macos.zip "WavelogGate.app"
           cd ..
       
       - name: Prepare Windows executable
