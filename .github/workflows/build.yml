@@ -31,10 +31,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
             ${{ runner.os }}-cargo-
-      
-      - name: Install cargo-bundle (macOS)
-        if: ${{ steps.cache.outputs.cache-hit != 'true' && matrix.os == 'macos-latest'}}
-        run: cargo install cargo-bundle
 
       - name: Build
         if: ${{ steps.cache.outputs.cache-hit != 'true' }}
