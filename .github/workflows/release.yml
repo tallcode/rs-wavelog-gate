@@ -76,7 +76,7 @@ jobs:
       
       - name: Prepare macOS app bundle
         run: |
-          zip rs-wavelog-gate-macos.zip rs-wavelog-gate-macos/WavelogGate.app
+          zip -r rs-wavelog-gate-macos.zip rs-wavelog-gate-macos
       
       - name: Prepare Windows executable
         run: |
